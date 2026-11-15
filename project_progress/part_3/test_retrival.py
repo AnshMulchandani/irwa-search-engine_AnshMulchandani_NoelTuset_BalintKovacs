@@ -189,9 +189,9 @@ def main():
     dataset_file = os.path.join(ROOT_DIR, "data", "fashion_products_dataset.json")
     validation_file_tf_idf = os.path.join(ROOT_DIR, "project_progress", "part_2", "validation_labels_tf_idf.csv")
     validation_file_bm25 = os.path.join(ROOT_DIR, "project_progress", "part_3", "validation_labels_bm25.csv")
-    validation_file_custom = os.path.join(ROOT_DIR, "project_progress", "part_2", "validation_labels_custom.csv")
+    validation_file_custom = os.path.join(ROOT_DIR, "project_progress", "part_3", "validation_labels_custom.csv")
 
-    K = 10 
+    K = 20 
     #define custom field weights for ranking
     FIELD_WEIGHTS = {
             'title': 4.0,
@@ -212,7 +212,7 @@ def main():
     print("Building Custom Weighted Inverted Index...")
     index_custom, tf_custom, df_custom, idf_custom, document_index_custom = custom.create_index_tfidf_custom(dataset, FIELD_WEIGHTS)
     print(f"Custom Index built successfully for {len(document_index_custom)} documents.\n")
-
+    """
     test_queries = [
             "women tshirt round neck cotton",
             "ecko unl printed sweatshirt",
@@ -235,6 +235,7 @@ def main():
             document_index_custom=document_index_custom, 
             top_k=K
         )
+    """
     print("Evaluating performance...")
 
     queries_map = {
@@ -252,7 +253,7 @@ def main():
         val_file_bm25=validation_file_bm25, 
         val_file_custom=validation_file_custom
     )
-    
+
 
 if __name__ == "__main__":
     main()
