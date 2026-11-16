@@ -134,62 +134,49 @@ def evaluate_algorithm(algo_name, val_file_path, queries_map, search_function, s
             
     return results
 
-def run_full_comparison(K, queries_map, dataset_file, val_file_tfidf, val_file_bm25, val_file_custom):
-
-    print(f"Loading dataset from {dataset_file}...")
-    dataset = get_json_data(dataset_file)
+def run_full_comparison(K, queries_map, index, idf, tf, document_index, idx_cust, idf_cust, tf_cust, doc_idx_cust, val_file_master):
     
-    # 2. Build Standard Index (used by TF-IDF and BM25)
-    index, tf, df, idf, document_index = tf_idf.create_index_tfidf(dataset)
-    
-    # 3. Build Custom Index (used by Custom Ranker)
-    FIELD_WEIGHTS = {'title': 4.0, 'brand': 3.0, 'sub_category': 2.0, 'description': 1.0, 'product_details': 1.0}
-    idx_cust, tf_cust, df_cust, idf_cust, doc_idx_cust = custom.create_index_tfidf_custom(dataset, FIELD_WEIGHTS)
-    
-    # 4. Evaluate TF-IDF
+    # 1. Evaluate TF-IDF
     tfidf_results = evaluate_algorithm(
         algo_name="TF-IDF with Cosine Similarity",
-        val_file_path=val_file_tfidf,
+        val_file_path=val_file_master,
         queries_map=queries_map,
         search_function=tf_idf.search_tf_idf,
         search_args=(index, idf, tf, document_index),
         k=K
     )
     
-    # 5. Evaluate BM25
+    # 2. Evaluate BM25
     bm25_results = evaluate_algorithm(
         algo_name="BM25",
-        val_file_path=val_file_bm25,
+        val_file_path=val_file_master,
         queries_map=queries_map,
         search_function=bm25.search_bm25,
-        search_args=(index, document_index), # BM25 doesn't need tf/idf dicts
+        search_args=(index, document_index), 
         k=K
     )
     
-    # 6. Evaluate Custom Ranker
+    # 3. Evaluate Custom Ranker
     custom_results = evaluate_algorithm(
         algo_name="Custom Search",
-        val_file_path=val_file_custom,
+        val_file_path=val_file_master,
         queries_map=queries_map,
         search_function=custom.search_tf_idf_custom,
         search_args=(idx_cust, idf_cust, tf_cust, doc_idx_cust),
         k=K
     )
     
-    # 7. Print Final Comparison Table
+    # 4. Print Final Comparison Table
     print(f"\n{'='*75}\nFINAL ALGORITHM COMPARISON (Top {K})\n{'='*75}")
     all_results = [r for r in [tfidf_results, bm25_results, custom_results] if r is not None]
     
     if all_results:
         df_comparison = pd.DataFrame(all_results).set_index('Algorithm')
-        # Multiply by 100 for cleaner percentage-like formatting, or leave as decimals
         print(df_comparison.round(4))
 
 def main():
     dataset_file = os.path.join(ROOT_DIR, "data", "fashion_products_dataset.json")
-    validation_file_tf_idf = os.path.join(ROOT_DIR, "project_progress", "part_2", "validation_labels_tf_idf.csv")
-    validation_file_bm25 = os.path.join(ROOT_DIR, "project_progress", "part_3", "validation_labels_bm25.csv")
-    validation_file_custom = os.path.join(ROOT_DIR, "project_progress", "part_3", "validation_labels_custom.csv")
+    validation_file_master = os.path.join(ROOT_DIR, "project_progress", "part_3", "validation_labels_master.csv")
 
     K = 20 
     #define custom field weights for ranking
@@ -245,13 +232,19 @@ def main():
         4: "satin necktie set pocket square cufflinks",
         5: "checkered full sleeve party blazer"
     }
+    
     run_full_comparison(
         K=K, 
         queries_map=queries_map, 
-        dataset_file=dataset_file, 
-        val_file_tfidf=validation_file_tf_idf, 
-        val_file_bm25=validation_file_bm25, 
-        val_file_custom=validation_file_custom
+        index=index,
+        idf=idf,
+        tf=tf,
+        document_index=document_index,
+        idx_cust=index_custom,
+        idf_cust=idf_custom,
+        tf_cust=tf_custom,
+        doc_idx_cust=document_index_custom,
+        val_file_master=validation_file_master
     )
 
 
