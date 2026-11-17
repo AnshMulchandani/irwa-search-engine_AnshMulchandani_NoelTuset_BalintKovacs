@@ -134,11 +134,19 @@ def evaluate_algorithm(algo_name, val_file_path, queries_map, search_function, s
             
     return results
 
-def run_full_comparison(K, queries_map, index, idf, tf, document_index, idx_cust, idf_cust, tf_cust, doc_idx_cust, val_file_master):
+def run_full_comparison(K, queries_map, index, idf, tf, document_index, idx_cust, idf_cust, tf_cust, doc_idx_cust, val_file_tfidf, val_file_bm25, val_file_custom, val_file_master):
     
     # 1. Evaluate TF-IDF
-    tfidf_results = evaluate_algorithm(
-        algo_name="TF-IDF with Cosine Similarity",
+    tfidf_self = evaluate_algorithm(
+        algo_name="TF-IDF (Individual Label)",
+        val_file_path=val_file_tfidf,
+        queries_map=queries_map,
+        search_function=tf_idf.search_tf_idf,
+        search_args=(index, idf, tf, document_index),
+        k=K
+    )
+    tfidf_master = evaluate_algorithm(
+        algo_name="TF-IDF with Cosine Similarity (Master label)",
         val_file_path=val_file_master,
         queries_map=queries_map,
         search_function=tf_idf.search_tf_idf,
@@ -147,8 +155,16 @@ def run_full_comparison(K, queries_map, index, idf, tf, document_index, idx_cust
     )
     
     # 2. Evaluate BM25
-    bm25_results = evaluate_algorithm(
-        algo_name="BM25",
+    bm25_self = evaluate_algorithm(
+        algo_name="BM25 (Individual Label)",
+        val_file_path=val_file_bm25,
+        queries_map=queries_map,
+        search_function=bm25.search_bm25,
+        search_args=(index, document_index), 
+        k=K
+    )
+    bm25_master = evaluate_algorithm(
+        algo_name="BM25 (Master label)",
         val_file_path=val_file_master,
         queries_map=queries_map,
         search_function=bm25.search_bm25,
@@ -157,8 +173,16 @@ def run_full_comparison(K, queries_map, index, idf, tf, document_index, idx_cust
     )
     
     # 3. Evaluate Custom Ranker
-    custom_results = evaluate_algorithm(
-        algo_name="Custom Search",
+    custom_self = evaluate_algorithm(
+        algo_name="Custom Search (Individual Label)",
+        val_file_path=val_file_custom,
+        queries_map=queries_map,
+        search_function=custom.search_tf_idf_custom,
+        search_args=(idx_cust, idf_cust, tf_cust, doc_idx_cust),
+        k=K
+    )
+    custom_master = evaluate_algorithm(
+        algo_name="Custom Search (Master Label)",
         val_file_path=val_file_master,
         queries_map=queries_map,
         search_function=custom.search_tf_idf_custom,
@@ -168,7 +192,7 @@ def run_full_comparison(K, queries_map, index, idf, tf, document_index, idx_cust
     
     # 4. Print Final Comparison Table
     print(f"\n{'='*75}\nFINAL ALGORITHM COMPARISON (Top {K})\n{'='*75}")
-    all_results = [r for r in [tfidf_results, bm25_results, custom_results] if r is not None]
+    all_results = [r for r in [tfidf_self, tfidf_master, bm25_self, bm25_master, custom_self, custom_master] if r is not None]
     
     if all_results:
         df_comparison = pd.DataFrame(all_results).set_index('Algorithm')
@@ -177,6 +201,10 @@ def run_full_comparison(K, queries_map, index, idf, tf, document_index, idx_cust
 def main():
     dataset_file = os.path.join(ROOT_DIR, "data", "fashion_products_dataset.json")
     validation_file_master = os.path.join(ROOT_DIR, "project_progress", "part_3", "validation_labels_master.csv")
+    validation_file_tf_idf = os.path.join(ROOT_DIR, "project_progress", "part_2", "validation_labels_tf_idf.csv")
+    validation_file_bm25 = os.path.join(ROOT_DIR, "project_progress", "part_3", "validation_labels_bm25.csv")
+    validation_file_custom = os.path.join(ROOT_DIR, "project_progress", "part_3", "validation_labels_custom.csv")
+    
 
     K = 20 
     #define custom field weights for ranking
@@ -232,20 +260,23 @@ def main():
         4: "satin necktie set pocket square cufflinks",
         5: "checkered full sleeve party blazer"
     }
-    
+
     run_full_comparison(
-        K=K, 
-        queries_map=queries_map, 
-        index=index,
-        idf=idf,
-        tf=tf,
-        document_index=document_index,
-        idx_cust=index_custom,
-        idf_cust=idf_custom,
-        tf_cust=tf_custom,
-        doc_idx_cust=document_index_custom,
-        val_file_master=validation_file_master
-    )
+            K=K, 
+            queries_map=queries_map, 
+            index=index,
+            idf=idf,
+            tf=tf,
+            document_index=document_index,
+            idx_cust=index_custom,
+            idf_cust=idf_custom,
+            tf_cust=tf_custom,
+            doc_idx_cust=document_index_custom,
+            val_file_tfidf=validation_file_tf_idf,
+            val_file_bm25=validation_file_bm25,
+            val_file_custom=validation_file_custom,
+            val_file_master=validation_file_master
+        )
 
 
 if __name__ == "__main__":
