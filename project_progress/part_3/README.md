@@ -9,7 +9,7 @@ pip install -r requirements.txt
 
 ```
 
-Put the dataset at `data/fashion_products_dataset.json` and the labels at `data/validation_labels.csv`.
+Put the dataset at `data/fashion_products_dataset.json` and ensure the validation labels are in the corresponding place (bm25, custom and master in part3 and tf_idf in part2).
 The NLTK stop word list downloads automatically on first run.
 
 And activate the `irwa.venv`
@@ -18,32 +18,32 @@ And activate the `irwa.venv`
 
 | File | What it does |
 |---|---|
-| `inverted_index.py` | Creates the inverted_index, (`create_index_tfidf`), search for documents that have all the terms in query and returns the documents ranked using TF-IDF.(`search_tf_idf`) the ranking part is done by (`rank_documents`)
+| `custom_ranking.py` | Creates the inverted_index, (`create_index_tfidf`), search for documents that have all the terms in query and returns the documents ranked using TF-IDF.(`search_tf_idf`) the ranking part is done by (`rank_documents`)
 
 | File | What it does |
 |---|---|
-| `test_search.py` | Loads the product dataset, builds the TF-IDF index, and executes search retrieval across the 5 predefined test queries. Outputs the matching product count and prints the top ranked retrieved items per query to evaluate ranking quality. |
+| `ranking_bm25.py` | Loads the product dataset, builds the TF-IDF index, and executes search retrieval across the 5 predefined test queries. Outputs the matching product count and prints the top ranked retrieved items per query to evaluate ranking quality. |
 
 | File | What it does |
 |---|---|
-| `evaluation.py` | Evaluates the search engine's retrieval and ranking performance against ground truth data. Computes depth-specific metrics (`calculate_precision_at_k`, `calculate_recall_at_k`, `calculate_f1_score_at_k`, `calculate_ndcg_at_k`) and overall ranking quality metrics (`calculate_average_precision`, `calculate_reciprocal_rank`). The main function executes this calculation across all queries.
+| `test_retrival.py` | Evaluates the search engine's retrieval and ranking performance against ground truth data. Computes depth-specific metrics (`calculate_precision_at_k`, `calculate_recall_at_k`, `calculate_f1_score_at_k`, `calculate_ndcg_at_k`) and overall ranking quality metrics (`calculate_average_precision`, `calculate_reciprocal_rank`). The main function executes this calculation across all queries.
 
 
 ## Run
 
 All commands from `project_progress`:
 
-To compute the ranking for the 5 proposed queries:
+To evaluate custom ranking:
 ```python (or python3)
-python -m part_2.test_search
+python -m part_3.custom_ranking
 ```
 
-To compute all the metrics related to ranking and retrival performance:
+To compute all the comparison between ranking algorithms:
 ```python (or python3)
-python -m part_2.evaluation
+python -m part_3.test_retrival
 ```
 
-## Function Reference (`inverted_index.py`)
+## Function Reference (`ranking_bm25.py`)
 
 - **`create_index_tfidf(data)`**: Builds the inverted index mapping terms to documents and positions, and calculates Term Frequency (TF), Document Frequency (DF), and Inverse Document Frequency (IDF). Returns the inverted index, TF lists, DF, IDF, and the preprocessed document index.
 - **`rank_documents(terms, docs, index, idf, tf, document_index)`**: Calculates the cosine similarity (dot product) between the query vector and candidate document vectors using their normalized TF-IDF weights. Returns a sorted list of document IDs from most to least relevant.
@@ -74,7 +74,9 @@ For `search_tf_idf`:
 4. Return an empty list if any term is completely missing from the index or if the intersection becomes empty.
 5. Pass the resulting candidate documents and the query terms to rank_documents to compute cosine similarity scores and return the ranked list.
 
-## Function Reference (`evaluation.py`)
+
+
+## Function Reference (`test_retrival.py`)
 - **`calculate_precision_at_k(retrieved_docs, relevant_docs, k)`**: Computes the proportion of the top K retrieved documents that are actually relevant. Returns hits / K.
 - **`calculate_recall_at_k(retrieved_docs, relevant_docs, k)`**: Computes the proportion of all available relevant documents that were successfully retrieved in the top K. Returns hits / total_relevant_docs.
 - **`calculate_f1_score_at_k(p_at_k, r_at_k)`**: Calculates the harmonic mean of Precision@K and Recall@K. Returns 0 if their sum is 0.
