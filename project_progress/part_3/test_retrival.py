@@ -10,7 +10,7 @@ import pandas as pd
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", ".."))
 
-def compare_retrival(query, index, idf, tf, document_index, index_custom, idf_custom, tf_custom, document_index_custom, top_k=10):
+def compare_retrival(query, index, idf, tf, document_index, index_custom, idf_custom, tf_custom, document_index_custom, top_k=20):
     """
     Executes all three search algorithms, prints the top results side by side, 
     and calculates the document overlap among the top K results.
