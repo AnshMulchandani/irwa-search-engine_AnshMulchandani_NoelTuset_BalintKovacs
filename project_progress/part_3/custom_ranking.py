@@ -16,7 +16,7 @@ import math
 import numpy as np
 
 
-def calculate_custom_multiplier(record, a=1.0, b=2.0):
+def calculate_custom_multiplier(record, a=1.0, b=2.0, c=0.8):
     """
     Calculates the value multiplier combining discount logic and stock penalty
     """
@@ -37,7 +37,7 @@ def calculate_custom_multiplier(record, a=1.0, b=2.0):
 
     #apply out of stock penalty
     is_out_of_stock = record.get('out_of_stock', False) == True
-    stock_penalty = 0.8 if is_out_of_stock else 1.0
+    stock_penalty = c if is_out_of_stock else 1.0
 
     return multiplier * stock_penalty
 
