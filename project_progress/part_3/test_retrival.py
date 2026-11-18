@@ -227,7 +227,7 @@ def main():
     print("Building Custom Weighted Inverted Index...")
     index_custom, tf_custom, df_custom, idf_custom, document_index_custom = custom.create_index_tfidf_custom(dataset, FIELD_WEIGHTS)
     print(f"Custom Index built successfully for {len(document_index_custom)} documents.\n")
-    """
+    
     test_queries = [
             "women tshirt round neck cotton",
             "ecko unl printed sweatshirt",
@@ -250,7 +250,7 @@ def main():
             document_index_custom=document_index_custom, 
             top_k=K
         )
-    """
+
     print("Evaluating performance...")
 
     queries_map = {
