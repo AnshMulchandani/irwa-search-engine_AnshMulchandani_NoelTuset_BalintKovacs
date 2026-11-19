@@ -44,45 +44,6 @@ python -m part_2.evaluation
 ```
 
 
-## Function Reference (`custom_ranking.py`)
-
-- **`calculate_custom_multiplier(record, a=1.0, b=2.0, c=0.8)`**: Calculates a business value multiplier for a product record by combining its discount percentage, logarithmic cash savings (`actual_price - selling_price`), and an availability penalty if the item is out of stock. Returns the final scalar multiplier.
-- **`create_index_tfidf_custom(data, field_weights=None)`**: Builds the inverted index mapping terms to documents, positions, and field weights, while computing and storing each document's custom business multiplier. Calculates weighted normalized Term Frequency (TF), Document Frequency (DF), and Inverse Document Frequency (IDF). Returns the inverted index, TF lists, DF, IDF, and the preprocessed document index.
-- **`rank_documents_tf_idf_custom(terms, docs, index, idf, tf, document_index)`**: Calculates the cosine similarity (dot product) between the query vector and candidate document vectors using their weighted TF-IDF scores, and multiplies the result by each document's precomputed business value multiplier. Returns a sorted list of document IDs from most to least relevant.
-- **`search_tf_idf_custom(query, index, idf, tf, document_index)`**: Preprocesses the user's input query, filters for candidate documents that contain all terms in the query (Boolean AND search), and passes them to `rank_documents_tf_idf_custom` for scoring. Returns the final ranked list.
-
-For `calculate_custom_multiplier`:
-1. Extract `actual_price`, `selling_price`, and `discount` from the product record.
-2. Compute the absolute cash saved (`actual_price - selling_price`) and calculate the `value_score` using the formula `(discount * a) + (log(money_saved + 1) * b)`.
-3. Convert the score into a base multiplier (`1.0 + value_score / 100.0`), defaulting to `1.0` if price fields are missing or invalid.
-4. Check the `out_of_stock` flag; if the product is out of stock, apply the stock penalty `c` (default `0.8`), otherwise keep it at `1.0`.
-5. Multiply and return `multiplier * stock_penalty`.
-
-For `create_index_tfidf_custom`:
-1. Preprocess the entire dataset using `preprocess_doc` to retrieve a clean `document_index`.
-2. Loop through every document in the index, compute its `value_multiplier` via `calculate_custom_multiplier`, and store it directly in the document's record.
-3. Extract separate text fields (`title`, `brand`, `sub_category`, `description`, and `product_details` values) and iterate over each field's terms using its corresponding weight from `field_weights`.
-4. Build a local `current_page_index` storing each term's document ID, positional indices, and array of field weights.
-5. Calculate the document's L2 norm using the square root of the sum of squared weighted term counts (`sum(posting[2]) ** 2`).
-6. For each term in the local index, calculate the normalized weighted TF (`weighted_count / norm`), increment the global Document Frequency (DF) counter, and append the posting to the global inverted index.
-7. After processing all documents, compute the IDF for every unique term using the base-2 logarithm formula `log2(num_documents / df[term])`.
-
-For `rank_documents_tf_idf_custom`:
-1. Initialize a `query_vector` (list of zeros) and a `doc_vectors` dictionary (mapping each candidate document ID to a list of zeros), both sized to the number of terms in the query.
-2. Count the frequency of each term in the query and compute the L2 norm of these counts to normalize the query length.
-3. Iterate through each term in the query along with its index position, skipping terms not present in the global index.
-4. Calculate the query's TF-IDF score (`(count / query_norm) * idf[term]`) and assign it to `query_vector[termIndex]`.
-5. Loop through the inverted index postings for the current term; for each posting belonging to a candidate document, compute its weighted TF-IDF score (`tf[term][doc_index] * idf[term]`) and store it in `doc_vectors[doc][termIndex]`.
-6. Calculate the final score for each candidate document by taking the dot product between its `doc_vector` and `query_vector`, then multiplying by the document's stored `value_multiplier`.
-7. Sort the candidate documents by their final adjusted score in descending order and return the ordered list of document IDs.
-
-For `search_tf_idf_custom`:
-1. Clean the query string using `preprocess_line` and return an empty list if the result is empty.
-2. Split the cleaned query into individual query terms.
-3. Iterate through each term and perform a strict conjunctive search (Boolean AND) by taking the set intersection (`docs.intersection`) of all document IDs containing the current term.
-4. Return an empty list immediately if any query term is absent from the index or if the intersection becomes empty.
-5. Pass the candidate document IDs and query terms to `rank_documents_tf_idf_custom` to score and return the ranked list of document IDs.
-
 ## Function Reference (`inverted_index.py`)
 
 - **`create_index_tfidf(data)`**: Builds the inverted index mapping terms to documents and positions, and calculates Term Frequency (TF), Document Frequency (DF), and Inverse Document Frequency (IDF). Returns the inverted index, TF lists, DF, IDF, and the preprocessed document index.
