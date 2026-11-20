@@ -8,6 +8,12 @@ From the repository root:
 pip install -r requirements.txt
 
 ```
+And also for this part install
+
+```
+python3 -m pip install gensim
+
+```
 
 Put the dataset at `data/fashion_products_dataset.json` and ensure the validation labels are in the corresponding place (bm25, custom and master in part3 and tf_idf in part2).
 The NLTK stop word list downloads automatically on first run.
