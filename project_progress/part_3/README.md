@@ -148,5 +148,63 @@ For `main`:
 7. Call the individual metric functions (AP, RR, Precision, Recall, F1, NDCG) and add their results to cumulative total variables.
 8. After processing all queries, divide the cumulative totals by the number of evaluated queries to print the final averaged metrics (Mean Average Precision, Mean Reciprocal Rank, etc.).
 
+
+## Function Reference (`word2vec_ranking.py`)
+
+- **`stable_hash(text)`**: Computes a deterministic CRC32 hash for a given text string so `gensim` initializes identical word vectors across different runs. Returns an integer hash value.
+- **`get_doc_terms(record)`**: Extracts and concatenates the preprocessed text fields (`title`, `description`, `brand`, `sub_category`, and `product_details` values) of a product record and splits them into a list of terms.
+- **`train_word2vec(document_index, params=W2V_PARAMS)`**: Trains a Skip-gram `Word2Vec` model on the corpus where each product's terms act as a sentence, using `stable_hash` and fixed parameters (`vector_size=100`, `window=5`, `min_count=1`, `sg=1`, `epochs=20`, `workers=1`) for reproducibility. Returns the trained model.
+- **`text_to_vector(terms, model)`**: Converts a list of terms into a single dense document or query embedding by averaging the `Word2Vec` vectors of all known terms. Returns `None` if no terms exist in the model's vocabulary.
+- **`build_doc_vectors(document_index, model)`**: Precomputes and caches the averaged `Word2Vec` embedding for every product in `document_index`. Returns a dictionary mapping `prod_id` to its vector.
+- **`cosine_similarity(a, b)`**: Computes the cosine similarity between two dense vectors `a` and `b` using `np.dot(a, b) / (norm(a) * norm(b))`, returning `0.0` if either vector has zero norm.
+- **`rank_documents_word2vec(query_terms, docs, doc_vectors, model)`**: Embeds the query terms via `text_to_vector`, computes cosine similarity against each candidate document's precomputed vector, and sorts matches by descending similarity (breaking ties by `doc_id`). Returns a list of `(doc_id, score)` tuples.
+- **`search_word2vec_with_scores(query, index, document_index, model, doc_vectors)`**: Preprocesses the query, filters candidate documents using strict conjunctive search (Boolean AND), and ranks them via `rank_documents_word2vec`. Returns a list of `(doc_id, score)` tuples.
+- **`search_word2vec(query, index, document_index, model, doc_vectors)`**: Wrapper around `search_word2vec_with_scores` that strips scores and returns only the ordered list of `doc_id`s so it matches the interface of `search_tf_idf` and `search_bm25`.
+- **`evaluate_on_labels(queries_map, val_df, algorithms, k=10)`**: Runs a list of `(name, search_function, extra_args)` algorithms against a ground-truth DataFrame (`val_df`) and computes averaged `P@K`, `R@K`, `F1@K`, `MAP`, `MRR`, and `NDCG@K`. Returns a list of result dictionaries.
+- **`main()`**: Loads the dataset, builds the TF-IDF inverted index, trains the `Word2Vec` model, prints top-20 results and overlap counts against TF-IDF and BM25 on the 5 test queries, and runs evaluation tables on both `validation_labels.csv` (`K=10, 20`) and `validation_labels_master.csv` (`K=20`).
+
+For `train_word2vec`:
+1. Iterate over all records in `document_index` and extract their token lists using `get_doc_terms`, discarding any empty documents.
+2. Initialize and train `gensim.models.Word2Vec` with `sentences`, `hashfxn=stable_hash`, and `W2V_PARAMS`.
+3. Return the trained `Word2Vec` model.
+
+For `search_word2vec_with_scores`:
+1. Clean the raw query string using `preprocess_line` and split it into `query_terms`; return an empty list if empty.
+2. Perform a strict conjunctive search (Boolean AND) across `index`, intersecting the sets of document IDs containing each query term.
+3. Return an empty list immediately if any term is missing from `index` or if the intersection is empty.
+4. Pass `query_terms`, the matching candidate `docs`, `doc_vectors`, and `model` to `rank_documents_word2vec` and return the scored results.
+
+For `evaluate_on_labels`:
+1. Loop through each `(name, search_function, search_args)` tuple in `algorithms` and initialize cumulative metric totals (`P`, `R`, `F1`, `AP`, `RR`, `NDCG`).
+2. Group `val_df` by `query_id`, extract relevant `pid`s where `labels == 1`, and execute `search_function` on the mapped query text.
+3. Compute all six Part 2 evaluation metrics at cutoff `k` for each query and add them to the running totals.
+4. Divide each cumulative total by `num_queries` and return the summary rows for tabular comparison.
+
+
+## Function Reference (`representation_experiments.py`)
+
+- **`weighted_vector(terms)`**: Computes an IDF-weighted average `Word2Vec` embedding for a list of terms by weighting each known term vector `model.wv[t]` by `idf.get(t, 0.0)`. Returns `None` if no terms are in the vocabulary or the total weight is zero.
+- **`and_docs(q)`**: Preprocesses the query string `q` and performs strict conjunctive retrieval (Boolean AND) using the inverted index. Returns a tuple `(terms, docs)` containing the cleaned query tokens and the set of matching document IDs.
+- **`make_search(kind)`**: Factory function that builds and returns a `search(q, *_)` callable for either `"weighted"` (IDF-weighted Word2Vec average) or `"d2v"` (Doc2Vec PV-DBOW inference), ranking candidate documents from `and_docs(q)` by cosine similarity.
+
+For `weighted_vector`:
+1. Iterate over each term in `terms` and check if it exists in `model.wv`.
+2. Append the term's embedding `model.wv[t]` to `vecs` and its corpus IDF weight `idf.get(t, 0.0)` to `ws`.
+3. If `vecs` is empty or `sum(ws) == 0`, return `None`.
+4. Return the weighted average vector computed via `np.average(vecs, axis=0, weights=ws)`.
+
+For `make_search`:
+1. Accept a representation mode `kind` (`"weighted"` or `"d2v"`) and define an inner `search(q, *_)` function.
+2. Retrieve `terms` and candidate `docs` via `and_docs(q)`.
+3. If `kind == "weighted"`, compute the query vector with `weighted_vector(terms)` and look up precomputed IDF-weighted document vectors; otherwise seed `d2v.random.seed(42)`, infer the query vector with `d2v.infer_vector(terms, epochs=100)`, and fetch document vectors from `d2v.dv`.
+4. Return an empty list if the query vector `qv` is `None`.
+5. Compute `cosine_similarity(qv, vecs[p])` for every candidate document `p` in `docs`, sort by descending score (breaking ties by `doc_id`), and return the ranked list of document IDs.
+
+For script execution (`__main__` block):
+1. Load `fashion_products_dataset.json`, build the TF-IDF index, train `Word2Vec`, and precompute plain and IDF-weighted document vectors.
+2. Wrap all products in `TaggedDocument` objects and train a `Doc2Vec` PV-DBOW model (`dm=0`, `dbow_words=1`, `vector_size=100`, `window=5`, `epochs=20`, `seed=42`, `workers=1`).
+3. Load `validation_labels.csv` and evaluate four representations side by side (`TF-IDF`, `word2vec average`, `word2vec IDF-weighted`, and `Doc2Vec (PV-DBOW)`) using `evaluate_on_labels` for `K=10` and `K=20`, printing rounded comparison DataFrames[cite: 14, 15].
+
+
 ## AI usage
 We used Gemini to review our evaluation and inverted_index code and debug errors in it, to help write some parts of the code like how to do certain computations, certain ranking decisions and help build testing code, and to review our draft explanation of these decisions. We checked the code and the results ourselves and can explain every function.
