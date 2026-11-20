@@ -48,7 +48,14 @@ To compute all the comparison between ranking algorithms:
 ```python (or python3)
 python -m part_3.test_retrival
 ```
-
+To evaluate word2vec ranking:
+```python (or python3)
+python -m part_3.word2vec_ranking
+```
+To run the experiments:
+```python (or python3)
+python3 -m part_3.representation_experiments
+```
 
 ## Function Reference (`custom_ranking.py`)
 
