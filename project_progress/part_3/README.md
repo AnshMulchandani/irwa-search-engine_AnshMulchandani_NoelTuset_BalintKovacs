@@ -207,4 +207,4 @@ For script execution (`__main__` block):
 
 
 ## AI usage
-We used Gemini to review our evaluation and inverted_index code and debug errors in it, to help write some parts of the code like how to do certain computations, certain ranking decisions and help build testing code, and to review our draft explanation of these decisions. We checked the code and the results ourselves and can explain every function.
+We used Gemini to review our ranking and evaluation code (BM25, custom scoring, Word2Vec, and representation experiments) and debug errors in it, to help write testing code, and to review our draft explanations of these decisions. We checked all the code and results ourselves and can explain every function.
