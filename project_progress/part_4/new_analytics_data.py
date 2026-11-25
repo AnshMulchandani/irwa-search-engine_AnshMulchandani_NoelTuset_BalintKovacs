@@ -242,9 +242,12 @@ class AnalyticsData:
         dwells = [c["dwell_time_seconds"] for c in self.fact_clicks if c["dwell_time_seconds"] is not None]
         avg_dwell = round(sum(dwells) / len(dwells), 2) if dwells else 0.0
 
+
+
         #average queries per logical mission (how many queries until users looks for somethings else)
         missions = {q["mission_id"] for q in self.fact_queries if q["mission_id"]}
-        avg_queries_per_mission = round(total_searches / len(missions), 2) if missions else 0.0
+        total_missions = len(missions)
+        avg_queries_per_mission = round(total_searches / total_missions, 2) if missions else 0.0
 
         return {
             "total_sessions": total_sessions,
@@ -254,7 +257,7 @@ class AnalyticsData:
             "ssr": ssr,
             "avg_rank": avg_rank,
             "avg_dwell": avg_dwell,
-            "total_missions": len(missions),
+            "total_missions": total_missions,
             "avg_queries_per_mission": avg_queries_per_mission,
         }
 
