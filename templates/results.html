@@ -11,17 +11,36 @@
     {% endif %}
     <hr>
     {% for item in results_list %}
-        <div class="pb-3">
+        <div class="pb-3 mb-3 border-bottom">
             <div class="doc-title">
-                <a href="{{ item.url }}">{{ item.title }}...
+                <a href="{{ item.doc_details_url }}">
+                    #{{ loop.index }} — {{ item.title }}
                 </a>
             </div>
-            <div class="doc-desc">
-                {{ item.doc_date }} — {{ item.description }}
+            <div class="doc-meta text-muted small my-1">
+                <strong>Price:</strong>
+                {% if item.selling_price is not none %}₹{{ "%.0f"|format(item.selling_price) }}{% else %}N/A{% endif %}
+                |
+                <strong>Discount:</strong>
+                {% if item.discount is not none %}{{ "%.0f"|format(item.discount) }}% off{% else %}0% off{% endif %}
+                |
+                <strong>Rating:</strong>
+                {{ item.average_rating if item.average_rating is not none else "N/A" }}
+                |
+                <strong>Brand:</strong> {{ item.brand or "Unknown" }}
+                {% if item.out_of_stock %}
+                    | <span class="text-danger">Out of Stock</span>
+                {% endif %}
             </div>
-
+            <div class="doc-desc">
+                {{ item.description or "No description available." }}
+            </div>
+            <div class="mt-1 small">
+                <a href="{{ item.doc_details_url }}" class="me-3">View Details</a>
+                {% if item.url and item.url != "#" %}
+                    <a href="{{ item.url }}" target="_blank" rel="noopener noreferrer">Original Product Page ↗</a>
+                {% endif %}
+            </div>
         </div>
-
     {% endfor %}
 {% endblock %}
-

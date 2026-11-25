@@ -1,8 +1,8 @@
-from part_1.preprocess import get_json_data, get_csv_data
-import part_2.inverted_index as tf_idf
-import part_2.evaluation as eval
-import part_3.ranking_bm25 as bm25
-import part_3.custom_ranking as custom
+from project_progress.part_1.preprocess import get_json_data, get_csv_data
+import project_progress.part_2.inverted_index as tf_idf
+import project_progress.part_2.evaluation as eval
+import project_progress.part_3.ranking_bm25 as bm25
+import project_progress.part_3.custom_ranking as custom
 import os
 import math
 import pandas as pd

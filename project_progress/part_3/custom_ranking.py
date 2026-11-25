@@ -9,7 +9,7 @@ for path in [project_progress_dir, root_dir]:
     if path not in sys.path:
         sys.path.insert(0, path)
 
-from part_1.preprocess import preprocess_doc, preprocess_line
+from project_progress.part_1.preprocess import preprocess_doc, preprocess_line
 from collections import defaultdict, Counter
 from array import array
 import math

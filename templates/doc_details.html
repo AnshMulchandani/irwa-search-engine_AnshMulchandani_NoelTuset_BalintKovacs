@@ -1,18 +1,79 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Document Detail - IRWA Search Engine</title>
-</head>
-<body>
-<div><a href="/" >Home</a></div>
-<div><a href="/stats" >Stats</a></div>
-<div><a href="/dashboard" >Dashboard</a></div>
-<h1>Document Detail Page</h1>
-<p>This is a placeholder for document details.</p>
-<p>Here you can display more information about the document.</p>
-<p>For example, you might show the full text of the document, metadata, or other relevant details.</p>
-<p>You can also include links to related documents or resources.</p>
-<p>Feel free to customize this page to fit the needs of your application.</p>
-</body>
-</html>
+{% extends "base.html" %}
+{% block page_title %}{{ doc.title }} - Product Details{% endblock %}
+{% block content %}
+    <div class="mb-3">
+        <a href="javascript:history.back()" class="btn btn-sm btn-outline-secondary me-2">← Back to Results</a>
+        <a href="/" class="me-3">Home</a>
+        <a href="/stats" class="me-3">Stats</a>
+        <a href="/dashboard">Dashboard</a>
+    </div>
+    <hr>
+
+    <h2>{{ doc.title }}</h2>
+    <p class="text-muted">
+        <strong>Brand:</strong> {{ doc.brand or "Unknown" }} |
+        <strong>Category:</strong> {{ doc.category or "N/A" }} &gt; {{ doc.sub_category or "N/A" }} |
+        <strong>PID:</strong> {{ doc.pid }}
+    </p>
+
+    {% if doc.images %}
+        <div class="d-flex flex-wrap gap-2 my-3">
+            {% for img_url in doc.images[:5] %}
+                <img src="{{ img_url }}" alt="{{ doc.title }}"
+                     style="height: 160px; width: auto; object-fit: cover; border: 1px solid #ddd; border-radius: 4px;">
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="p-3 my-3" style="border: 1px solid #ddd; border-radius: 5px; background-color: #fafafa;">
+        <strong>Selling Price:</strong>
+        {% if doc.selling_price is not none %}₹{{ "%.0f"|format(doc.selling_price) }}{% else %}N/A{% endif %}
+        |
+        <strong>Actual Price:</strong>
+        {% if doc.actual_price is not none %}₹{{ "%.0f"|format(doc.actual_price) }}{% else %}N/A{% endif %}
+        |
+        <strong>Discount:</strong>
+        {% if doc.discount is not none %}{{ "%.0f"|format(doc.discount) }}% off{% else %}0% off{% endif %}
+        |
+        <strong>Rating:</strong>
+        {{ doc.average_rating if doc.average_rating is not none else "N/A" }}
+        |
+        <strong>Status:</strong>
+        {% if doc.out_of_stock %}
+            <span class="text-danger">Out of Stock</span>
+        {% else %}
+            <span class="text-success">In Stock</span>
+        {% endif %}
+    </div>
+
+    <h5>Description</h5>
+    <p>{{ doc.description or "No description available." }}</p>
+
+    <h5>Additional Information</h5>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <th style="width: 220px;">Seller</th>
+                <td>{{ doc.seller or "N/A" }}</td>
+            </tr>
+            <tr>
+                <th>Original Store Page</th>
+                <td>
+                    {% if doc.url and doc.url != "#" %}
+                        <a href="{{ doc.url }}" target="_blank" rel="noopener noreferrer">{{ doc.url }}</a>
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+            </tr>
+            {% if doc.product_details %}
+                {% for key, value in doc.product_details.items() %}
+                    <tr>
+                        <th>{{ key }}</th>
+                        <td>{{ value }}</td>
+                    </tr>
+                {% endfor %}
+            {% endif %}
+        </tbody>
+    </table>
+{% endblock %}

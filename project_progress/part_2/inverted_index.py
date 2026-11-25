@@ -1,4 +1,4 @@
-from part_1.preprocess import preprocess_doc, preprocess_line
+from project_progress.part_1.preprocess import preprocess_doc, preprocess_line
 from collections import defaultdict, Counter
 from array import array
 import math

@@ -29,13 +29,6 @@ app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")
 # open browser dev tool to see the cookies
 app.session_cookie_name = os.getenv("SESSION_COOKIE_NAME")
-# instantiate our search engine
-search_engine = SearchEngine()
-# instantiate our in memory persistence
-analytics_data = AnalyticsData()
-# instantiate RAG generator
-rag_generator = RAGGenerator()
-
 # load documents corpus into memory.
 full_path = os.path.realpath(__file__)
 path, filename = os.path.split(full_path)
@@ -43,6 +36,13 @@ file_path = path + "/" + os.getenv("DATA_FILE_PATH")
 corpus = load_corpus(file_path)
 # Log first element of corpus to verify it loaded correctly:
 print("\nCorpus is loaded... \n First element:\n", list(corpus.values())[0])
+# instantiate our search engine
+search_engine = SearchEngine(file_path)
+# instantiate our in memory persistence
+analytics_data = AnalyticsData()
+# instantiate RAG generator
+rag_generator = RAGGenerator()
+
 
 
 # Home URL "/"
@@ -69,12 +69,13 @@ def index():
 def search_form_post():
     
     search_query = request.form['search-query']
+    algorithm = request.values.get('algorithm', 'custom') #tune to use other algorithms
 
     session['last_search_query'] = search_query
 
     search_id = analytics_data.save_query_terms(search_query)
 
-    results = search_engine.search(search_query, search_id, corpus)
+    results = search_engine.search(search_query, search_id, corpus, algorithm=algorithm)
 
     # generate RAG response based on user query and retrieved results
     rag_response = rag_generator.generate_response(search_query, results)
@@ -115,7 +116,8 @@ def doc_details():
 
     print("fact_clicks count for id={} is {}".format(clicked_doc_id, analytics_data.fact_clicks[clicked_doc_id]))
     print(analytics_data.fact_clicks)
-    return render_template('doc_details.html')
+    doc = corpus.get(clicked_doc_id)
+    return render_template('doc_details.html', doc=doc)
 
 
 @app.route('/stats', methods=['GET'])
@@ -159,4 +161,6 @@ def plot_number_of_views():
 
 
 if __name__ == "__main__":
-    app.run(port=8088, host="0.0.0.0", threaded=False, debug=os.getenv("DEBUG"))
+    #indexes are not build twice like this
+    debug_mode = str(os.getenv("DEBUG", "False")).lower() == "true"
+    app.run(port=8088, host="0.0.0.0", threaded=False, debug=debug_mode, use_reloader=False)

@@ -10,10 +10,10 @@ for path in [project_progress_dir, root_dir]:
     if path not in sys.path:
         sys.path.insert(0, path)
 
-from part_1.preprocess import preprocess_line, get_json_data, get_csv_data
-import part_2.inverted_index as tf_idf
-import part_2.evaluation as eval
-import part_3.ranking_bm25 as bm25
+from project_progress.part_1.preprocess import preprocess_line, get_json_data, get_csv_data
+import project_progress.part_2.inverted_index as tf_idf
+import project_progress.part_2.evaluation as eval
+import project_progress.part_3.ranking_bm25 as bm25
 import numpy as np
 from gensim.models import Word2Vec
 

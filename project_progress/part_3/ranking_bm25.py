@@ -1,5 +1,5 @@
-from part_1.preprocess import preprocess_line
-import part_2.inverted_index as tf_idf
+from project_progress.part_1.preprocess import preprocess_line
+import project_progress.part_2.inverted_index as tf_idf
 from collections import defaultdict, Counter
 from array import array
 import math

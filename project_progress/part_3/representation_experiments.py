@@ -7,9 +7,9 @@ import os, sys, numpy as np
 PP = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 if PP not in sys.path:
     sys.path.insert(0, PP)
-from part_1.preprocess import get_json_data, get_csv_data, preprocess_line
-import part_2.inverted_index as tf_idf
-import part_3.word2vec_ranking as w2v
+from project_progress.part_1.preprocess import get_json_data, get_csv_data, preprocess_line
+import project_progress.part_2.inverted_index as tf_idf
+import project_progress.part_3.word2vec_ranking as w2v
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 import pandas as pd
 

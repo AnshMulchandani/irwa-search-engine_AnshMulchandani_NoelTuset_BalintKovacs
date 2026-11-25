@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from part_2.inverted_index import create_index_tfidf, search_tf_idf 
+from project_progress.part_2.inverted_index import create_index_tfidf, search_tf_idf 
 from part_1.preprocess import get_json_data, get_csv_data
 import math
 # Get the absolute path to this document, then go one folder up to the parent
