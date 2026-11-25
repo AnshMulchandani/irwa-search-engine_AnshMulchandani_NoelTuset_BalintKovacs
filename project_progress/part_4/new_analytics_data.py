@@ -228,11 +228,11 @@ class AnalyticsData:
         total_searches = len(self.fact_queries)
         total_clicks = len(self.fact_clicks)
 
-        #Click-Through Rate (CTR): % of searches that led to at least 1 click
+        #search success rate (how many searches resulted in at least one click)
         searches_with_clicks = {
             c["search_id"] for c in self.fact_clicks if c["search_id"] is not None
         }
-        ctr = round((len(searches_with_clicks) / total_searches) * 100, 1) if total_searches > 0 else 0.0
+        ssr = round((len(searches_with_clicks) / total_searches) * 100, 2) if total_searches > 0 else 0.0
 
         #average click rank
         ranks = [c["rank"] for c in self.fact_clicks if c["rank"] is not None]
@@ -251,7 +251,7 @@ class AnalyticsData:
             "total_requests": total_requests,
             "total_searches": total_searches,
             "total_clicks": total_clicks,
-            "ctr": ctr,
+            "ssr": ssr,
             "avg_rank": avg_rank,
             "avg_dwell": avg_dwell,
             "total_missions": len(missions),
