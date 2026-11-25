@@ -284,6 +284,53 @@ class AnalyticsData:
         )
         return chart.to_html()
 
+    def get_chart_data(self) -> dict:
+        """Prepares aggregated datasets for Chart.js on the dashboard."""
+        query_counts: Dict[str, int] = {}
+        term_counts: Dict[str, int] = {}
+        for q in self.fact_queries:
+            raw = q["raw_query"].strip().lower()
+            if raw:
+                query_counts[raw] = query_counts.get(raw, 0) + 1
+            for t in q["terms"]:
+                term_counts[t] = term_counts.get(t, 0) + 1
+
+        top_queries = sorted(query_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+        top_terms = sorted(term_counts.items(), key=lambda x: x[1], reverse=True)[:12]
+
+        browser_counts: Dict[str, int] = {}
+        device_counts: Dict[str, int] = {}
+        for s in self.dim_sessions.values():
+            b = s.get("browser", "Unknown")
+            d = s.get("device_type", "Desktop")
+            browser_counts[b] = browser_counts.get(b, 0) + 1
+            device_counts[d] = device_counts.get(d, 0) + 1
+
+        rank_counts: Dict[int, int] = {}
+        for c in self.fact_clicks:
+            if c["rank"] is not None:
+                rank_counts[c["rank"]] = rank_counts.get(c["rank"], 0) + 1
+        sorted_ranks = sorted(rank_counts.items())
+
+        hourly_requests = [0] * 24
+        for r in self.fact_requests:
+            hourly_requests[r["hour_of_day"]] += 1
+
+        return {
+            "top_queries_labels": [x[0] for x in top_queries],
+            "top_queries_values": [x[1] for x in top_queries],
+            "top_terms_labels": [x[0] for x in top_terms],
+            "top_terms_values": [x[1] for x in top_terms],
+            "browser_labels": list(browser_counts.keys()),
+            "browser_values": list(browser_counts.values()),
+            "device_labels": list(device_counts.keys()),
+            "device_values": list(device_counts.values()),
+            "rank_labels": [f"Rank #{x[0]}" for x in sorted_ranks],
+            "rank_values": [x[1] for x in sorted_ranks],
+            "hourly_labels": [f"{h:02d}:00" for h in range(24)],
+            "hourly_values": hourly_requests,
+        }
+
 
 class ClickedDoc:
     def __init__(self, doc_id, description, counter):

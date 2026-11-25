@@ -22,8 +22,87 @@
 
     -->
 
-    <h3>Dashboard</h3>
+    <h2>Analytics Dashboard</h2>
+
+    <h3>1. Key Metrics</h3>
+    <ul>
+        <li><strong>Total Sessions:</strong> {{ metrics.total_sessions }}</li>
+        <li><strong>Total Requests:</strong> {{ metrics.total_requests }}</li>
+        <li><strong>Total Searches:</strong> {{ metrics.total_searches }}</li>
+        <li><strong>Total Clicks:</strong> {{ metrics.total_clicks }}</li>
+        <li><strong>Search Success Rate (SSR):</strong> {{ metrics.ssr }}%</li>
+        <li><strong>Average Click Rank:</strong> {{ metrics.avg_rank }}</li>
+        <li><strong>Average Dwell Time:</strong> {{ metrics.avg_dwell }} seconds</li>
+        <li><strong>Total Missions:</strong> {{ metrics.total_missions }}</li>
+        <li><strong>Average Queries per Mission:</strong> {{ metrics.avg_queries_per_mission }}</li>
+    </ul>
+
+    <hr>
+
+    <h3>2. Top Clicked Documents</h3>
     <iframe src="/plot_number_of_views" width="600" height="400" style="border: none;"></iframe>
+
+    <hr>
+
+    <h3>3. Recent Searches & Missions</h3>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Search ID</th>
+                <th>Query</th>
+                <th>Number of Terms</th>
+                <th>Results Found</th>
+                <th>Mission ID</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for q in recent_queries %}
+                <tr>
+                    <td>{{ q.search_id }}</td>
+                    <td>{{ q.raw_query }}</td>
+                    <td>{{ q.num_terms }}</td>
+                    <td>{{ q.num_results }}</td>
+                    <td>{{ q.mission_id }}</td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="5">No searches yet.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <hr>
+
+    <h3>4. User Sessions</h3>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Session ID</th>
+                <th>Browser</th>
+                <th>OS</th>
+                <th>Device</th>
+                <th>Start Time</th>
+                <th>Missions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in sessions %}
+                <tr>
+                    <td>{{ s.session_id }}</td>
+                    <td>{{ s.browser }}</td>
+                    <td>{{ s.os }}</td>
+                    <td>{{ s.device_type }}</td>
+                    <td>{{ s.start_time }}</td>
+                    <td>{{ s.mission_count }}</td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="6">No sessions yet.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
 
 {% endblock %}

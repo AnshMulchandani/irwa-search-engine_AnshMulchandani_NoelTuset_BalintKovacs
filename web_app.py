@@ -5,7 +5,10 @@ import httpagentparser  # for getting the user agent as json
 from flask import Flask, render_template, session
 from flask import request
 
-from myapp.analytics.analytics_data import AnalyticsData, ClickedDoc
+import time
+
+from project_progress.part_4.new_analytics_data import AnalyticsData, ClickedDoc
+#from myapp.analytics.analytics_data import AnalyticsData, ClickedDoc
 from myapp.search.load_corpus import load_corpus
 from myapp.search.objects import Document, StatsDocument
 from myapp.search.search_engine import SearchEngine
@@ -43,7 +46,32 @@ analytics_data = AnalyticsData()
 # instantiate RAG generator
 rag_generator = RAGGenerator()
 
+@app.before_request################################################
+def track_request_and_session():
+    if request.endpoint == "static" or request.path.startswith("/static") or request.path == "/favicon.ico":
+        return
 
+    now = time.time()
+
+    # Close dwell time if user was viewing a product details page
+    active_click_id = session.pop("active_click_id", None)
+    click_start_ts = session.pop("click_start_ts", None)
+    if active_click_id is not None and click_start_ts is not None:
+        analytics_data.record_dwell_time(active_click_id, max(0.0, now - click_start_ts))
+
+    # Validate or create session (30-min timeout)
+    agent_info = httpagentparser.detect(request.headers.get("User-Agent", ""))
+    user_ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    valid_sid = analytics_data.get_or_create_session(
+        session_id=session.get("analytics_session_id"),
+        ip_address=user_ip,
+        agent_info=agent_info,
+    )
+    session["analytics_session_id"] = valid_sid
+
+    # Log request
+    if request.endpoint != "plot_number_of_views":
+        analytics_data.log_request(valid_sid, request.endpoint or "unknown", request.method, request.path)
 
 # Home URL "/"
 @app.route('/')
@@ -73,7 +101,9 @@ def search_form_post():
 
     session['last_search_query'] = search_query
 
-    search_id = analytics_data.save_query_terms(search_query)
+    sid = session.get('analytics_session_id') 
+    search_id = analytics_data.save_query_terms(search_query, session_id=sid)
+    session['last_search_id'] = search_id
 
     results = search_engine.search(search_query, search_id, corpus, algorithm=algorithm)
 
@@ -82,12 +112,12 @@ def search_form_post():
     print("RAG response:", rag_response)
 
     found_count = len(results)
+    analytics_data.update_query_result_count(search_id, found_count) 
     session['last_found_count'] = found_count
 
     print(session)
 
-    return render_template('results.html', results_list=results, page_title="Results", found_counter=found_count, rag_response=rag_response)
-
+    return render_template('results.html', results_list=results, page_title="Results", found_counter=found_count, rag_response=rag_response, search_id=search_id)
 
 @app.route('/doc_details', methods=['GET'])
 def doc_details():
@@ -95,26 +125,33 @@ def doc_details():
     Show document details page
     ### Replace with your custom logic ###
     """
-
-    # getting request parameters:
-    # user = request.args.get('user')
     print("doc details session: ")
     print(session)
 
-    res = session["some_var"]
+    res = session.get("some_var") 
     print("recovered var from session:", res)
 
     # get the query string parameters from request
-    clicked_doc_id = request.args["pid"]
-    print("click in id={}".format(clicked_doc_id))
+    clicked_doc_id = request.args.get("pid")
 
-    # store data in statistics table 1
-    if clicked_doc_id in analytics_data.fact_clicks.keys():
-        analytics_data.fact_clicks[clicked_doc_id] += 1
-    else:
-        analytics_data.fact_clicks[clicked_doc_id] = 1
+    rank_param = request.args.get("rank", type=int) 
+    search_id_param = request.args.get("search_id", type=int) or session.get("last_search_id") 
+    sid = session.get("analytics_session_id") 
 
-    print("fact_clicks count for id={} is {}".format(clicked_doc_id, analytics_data.fact_clicks[clicked_doc_id]))
+    print("click in id={} (rank={}, search_id={})".format(clicked_doc_id, rank_param, search_id_param))
+
+    #store click in fact_clicks and start dwell timer
+    if clicked_doc_id:
+        click_id = analytics_data.log_click(
+            doc_id=clicked_doc_id,
+            session_id=sid,
+            search_id=search_id_param,
+            rank=rank_param,
+        )
+        session["active_click_id"] = click_id 
+        session["click_start_ts"] = time.time() 
+
+    print("doc_click_counts for id={} is {}".format(clicked_doc_id, analytics_data.doc_click_counts.get(clicked_doc_id, 0)))
     print(analytics_data.fact_clicks)
     doc = corpus.get(clicked_doc_id)
     return render_template('doc_details.html', doc=doc)
@@ -128,36 +165,51 @@ def stats():
     """
 
     docs = []
-    for doc_id in analytics_data.fact_clicks:
-        row: Document = corpus[doc_id]
-        count = analytics_data.fact_clicks[doc_id]
-        doc = StatsDocument(pid=row.pid, title=row.title, description=row.description, url=row.url, count=count)
-        docs.append(doc)
+    for doc_id, count in analytics_data.doc_click_counts.items(): 
+        if doc_id in corpus:
+            row: Document = corpus[doc_id]
+            doc = StatsDocument(pid=row.pid, title=row.title, description=row.description, url=row.url, count=count)
+            docs.append(doc)
     
-    # simulate sort by ranking
+    #simulate sort by ranking
     docs.sort(key=lambda doc: doc.count, reverse=True)
-    return render_template('stats.html', clicks_data=docs)
+    return render_template('stats.html', clicks_data=docs, page_title="Stats")
 
 
 @app.route('/dashboard', methods=['GET'])
 def dashboard():
     visited_docs = []
-    for doc_id in analytics_data.fact_clicks.keys():
-        d: Document = corpus[doc_id]
-        doc = ClickedDoc(doc_id, d.description, analytics_data.fact_clicks[doc_id])
-        visited_docs.append(doc)
+    for doc_id, count in analytics_data.doc_click_counts.items(): 
+        if doc_id in corpus:
+            d: Document = corpus[doc_id]
+            doc = ClickedDoc(doc_id, d.title, count)
+            visited_docs.append(doc)
 
-    # simulate sort by ranking
+    #simulate sort by ranking
     visited_docs.sort(key=lambda doc: doc.counter, reverse=True)
 
     for doc in visited_docs: print(doc)
-    return render_template('dashboard.html', visited_docs=visited_docs)
+
+    metrics = analytics_data.get_summary_metrics()
+    chart_data = analytics_data.get_chart_data() 
+
+    return render_template(
+        'dashboard.html',
+        page_title="Analytics Dashboard",
+        visited_docs=visited_docs,
+        metrics=metrics,
+        chart_data=chart_data,
+        sessions=list(analytics_data.dim_sessions.values()),
+        recent_queries=list(reversed(analytics_data.fact_queries[-15:])),
+    )
 
 
 # New route added for generating an examples of basic Altair plot (used for dashboard)
 @app.route('/plot_number_of_views', methods=['GET'])
 def plot_number_of_views():
     return analytics_data.plot_number_of_views()
+
+
 
 
 if __name__ == "__main__":
