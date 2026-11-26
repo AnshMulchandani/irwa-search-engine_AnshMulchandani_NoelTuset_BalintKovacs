@@ -281,6 +281,89 @@ class AnalyticsData:
         )
         return chart.to_html()
 
+    def plot_clicks_by_rank(self) -> str:
+        ranks = [c["rank"] for c in self.fact_clicks if c["rank"] is not None]
+        if not ranks:
+            return "<p style='font-family:sans-serif;color:#666;'>No ranked clicks recorded yet.</p>"
+        df = pd.Series(ranks).value_counts().reset_index()
+        df.columns = ["Rank", "Clicks"]
+        df = df.sort_values("Rank")
+        chart = (
+            alt.Chart(df)
+            .mark_bar(color="#54a24b")
+            .encode(
+                x=alt.X("Rank:O", title="Result Position (Rank)"),
+                y=alt.Y("Clicks:Q", title="Number of Clicks"),
+                tooltip=["Rank", "Clicks"],
+            )
+            .properties(title="Clicks by Result Rank", width=450, height=280)
+        )
+        return chart.to_html()
+
+    def plot_top_terms(self) -> str:
+        all_terms = [t for q in self.fact_queries for t in q["terms"]]
+        if not all_terms:
+            return "<p style='font-family:sans-serif;color:#666;'>No search terms recorded yet.</p>"
+        df = pd.Series(all_terms).value_counts().head(10).reset_index()
+        df.columns = ["Term", "Count"]
+        chart = (
+            alt.Chart(df)
+            .mark_bar(color="#f58518")
+            .encode(
+                x=alt.X("Term:N", sort="-y", title="Search Term"),
+                y=alt.Y("Count:Q", title="Frequency"),
+                tooltip=["Term", "Count"],
+            )
+            .properties(title="Top 10 Searched Terms", width=450, height=280)
+        )
+        return chart.to_html()
+
+
+    def plot_dwell_by_rank(self) -> str:
+        rows = [
+            {"Rank": c["rank"], "Dwell Time (s)": c["dwell_time_seconds"]}
+            for c in self.fact_clicks
+            if c["rank"] is not None and c["dwell_time_seconds"] is not None
+        ]
+        if not rows:
+            return "<p style='font-family:sans-serif;color:#666;'>No completed dwell times recorded yet.</p>"
+        df = pd.DataFrame(rows).groupby("Rank", as_index=False)["Dwell Time (s)"].mean()
+        df["Dwell Time (s)"] = df["Dwell Time (s)"].round(2)
+        chart = (
+            alt.Chart(df)
+            .mark_bar(color="#b279a2")
+            .encode(
+                x=alt.X("Rank:O", title="Result Position (Rank)"),
+                y=alt.Y("Dwell Time (s):Q", title="Avg Dwell Time (seconds)"),
+                tooltip=["Rank", "Dwell Time (s)"],
+            )
+            .properties(title="Average Dwell Time by Click Rank", width=450, height=280)
+        )
+        return chart.to_html()
+
+    def plot_requests_by_page(self) -> str:
+        if not self.fact_requests:
+            return "<p style='font-family:sans-serif;color:#666;'>No requests recorded yet.</p>"
+        endpoints = [r["endpoint"] for r in self.fact_requests]
+        df = pd.Series(endpoints).value_counts().reset_index()
+        df.columns = ["Page", "Requests"]
+        chart = (
+            alt.Chart(df)
+            .mark_bar(color="#4c78a8")
+            .encode(
+                x=alt.X("Page:N", sort="-y", title="Page / Endpoint"),
+                y=alt.Y("Requests:Q", title="Number of Requests"),
+                tooltip=["Page", "Requests"],
+            )
+            .properties(title="Traffic by Page (Navigation Funnel)", width=450, height=280)
+        )
+        return chart.to_html()
+
+
+
+
+
+
     def get_chart_data(self) -> dict:
         """Prepares aggregated datasets for Chart.js on the dashboard."""
         query_counts: Dict[str, int] = {}

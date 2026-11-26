@@ -48,8 +48,16 @@ rag_generator = RAGGenerator()
 
 @app.before_request################################################
 def track_request_and_session():
-    if request.endpoint == "static" or request.path.startswith("/static") or request.path == "/favicon.ico":
-        return
+    #Log request (ignore chart iframes)
+    chart_endpoints = {
+        "plot_number_of_views",
+        "plot_clicks_by_rank",
+        "plot_top_terms",
+        "plot_dwell_by_rank",
+        "plot_requests_by_page",
+    }
+    if request.endpoint not in chart_endpoints:
+        analytics_data.log_request(valid_sid, request.endpoint or "unknown", request.method, request.path)
 
     now = time.time()
 
@@ -209,6 +217,21 @@ def dashboard():
 def plot_number_of_views():
     return analytics_data.plot_number_of_views()
 
+@app.route('/plot_clicks_by_rank', methods=['GET'])
+def plot_clicks_by_rank():
+    return analytics_data.plot_clicks_by_rank()
+
+@app.route('/plot_top_terms', methods=['GET'])
+def plot_top_terms():
+    return analytics_data.plot_top_terms()
+
+@app.route('/plot_dwell_by_rank', methods=['GET'])
+def plot_dwell_by_rank():
+    return analytics_data.plot_dwell_by_rank()
+
+@app.route('/plot_requests_by_page', methods=['GET'])
+def plot_requests_by_page():
+    return analytics_data.plot_requests_by_page()
 
 
 
