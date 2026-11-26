@@ -7,8 +7,7 @@ from flask import request
 
 import time
 
-from project_progress.part_4.new_analytics_data import AnalyticsData, ClickedDoc
-#from myapp.analytics.analytics_data import AnalyticsData, ClickedDoc
+from myapp.analytics.analytics_data import AnalyticsData, ClickedDoc
 from myapp.search.load_corpus import load_corpus
 from myapp.search.objects import Document, StatsDocument
 from myapp.search.search_engine import SearchEngine
@@ -46,18 +45,10 @@ analytics_data = AnalyticsData()
 # instantiate RAG generator
 rag_generator = RAGGenerator()
 
-@app.before_request################################################
+@app.before_request
 def track_request_and_session():
-    #Log request (ignore chart iframes)
-    chart_endpoints = {
-        "plot_number_of_views",
-        "plot_clicks_by_rank",
-        "plot_top_terms",
-        "plot_dwell_by_rank",
-        "plot_requests_by_page",
-    }
-    if request.endpoint not in chart_endpoints:
-        analytics_data.log_request(valid_sid, request.endpoint or "unknown", request.method, request.path)
+    if request.endpoint == "static" or request.path.startswith("/static") or request.path == "/favicon.ico":
+        return
 
     now = time.time()
 
@@ -77,8 +68,15 @@ def track_request_and_session():
     )
     session["analytics_session_id"] = valid_sid
 
-    # Log request
-    if request.endpoint != "plot_number_of_views":
+    # Log request (ignore chart iframes)
+    chart_endpoints = {
+        "plot_number_of_views",
+        "plot_clicks_by_rank",
+        "plot_top_terms",
+        "plot_dwell_by_rank",
+        "plot_requests_by_page",
+    }
+    if request.endpoint not in chart_endpoints:
         analytics_data.log_request(valid_sid, request.endpoint or "unknown", request.method, request.path)
 
 # Home URL "/"
