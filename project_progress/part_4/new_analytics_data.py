@@ -9,14 +9,11 @@ import pandas as pd
 
 class AnalyticsData:
     """
-    In-memory Star Schema persistence for Web Analytics.
-    
-    Dimension Table:
-      - dim_sessions: Visitor context, physical sit-downs, and logical missions.
-    Fact Tables:
-      - fact_requests: Every HTTP request hit.
-      - fact_queries: Every search query executed, term counts, order, and mission ID.
-      - fact_clicks: Every result document click, rank, related query, and dwell time.
+    in-memory star schema
+      - dim_sessions: user context, physical sit-downs, and logical missions
+      - fact_requests: every HTTP request hit
+      - fact_queries: every search query executed, term counts, order, and mission id
+      - fact_clicks: every result document click, rank, related query, and dwell time
     """
 
     SESSION_TIMEOUT_SECONDS = 30 * 60  #when 30 minutes pass, new session
