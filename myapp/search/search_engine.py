@@ -1,11 +1,14 @@
 import random
 import numpy as np
+import os
+from gensim.models import Word2Vec
     
 from myapp.search.objects import Document
 from project_progress.part_1.preprocess import get_json_data
 import project_progress.part_2.inverted_index as tf_idf
 import project_progress.part_3.ranking_bm25 as bm25
 import project_progress.part_3.custom_ranking as custom
+import project_progress.part_3.word2vec_ranking as w2v
 
 def dummy_search(corpus: dict, search_id, num_results=20):
     """
@@ -91,6 +94,19 @@ class SearchEngine:
             self.document_index_custom,
         ) = custom.create_index_tfidf_custom(dataset, self.field_weights)
 
+        # Train or load Word2Vec model and precompute document vectors once at startup
+        model_path = os.path.join(os.path.dirname(dataset_path), "word2vec.model")
+        if os.path.exists(model_path):
+            print(f"Loading cached Word2Vec model from {model_path}...")
+            self.w2v_model = Word2Vec.load(model_path)
+        else:
+            print("Training Word2Vec model (first run only)...")
+            self.w2v_model = w2v.train_word2vec(self.document_index)
+            self.w2v_model.save(model_path)
+
+        print("Building Word2Vec document vectors...")
+        self.w2v_doc_vectors = w2v.build_doc_vectors(self.document_index, self.w2v_model)
+
         print(f"SearchEngine ready with {len(self.raw_corpus)} products.")
 
     def search(self, search_query, search_id, corpus, algorithm="custom", num_results=20):
@@ -109,6 +125,14 @@ class SearchEngine:
         elif algorithm == "bm25":
             ranked_pids = bm25.search_bm25(
                 search_query, self.index, self.document_index
+            )
+        elif algorithm == "word2vec":
+            ranked_pids = w2v.search_word2vec(
+                search_query,
+                self.index,
+                self.document_index,
+                self.w2v_model,
+                self.w2v_doc_vectors,
             )
         else:
             ranked_pids = custom.search_tf_idf_custom(
