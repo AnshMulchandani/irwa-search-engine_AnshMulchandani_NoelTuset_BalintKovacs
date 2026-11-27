@@ -12,6 +12,7 @@ from myapp.search.load_corpus import load_corpus
 from myapp.search.objects import Document, StatsDocument
 from myapp.search.search_engine import SearchEngine
 from myapp.generation.rag import RAGGenerator
+from myapp.generation.rag_improved import ImprovedRAGGenerator, parse_constraints
 from dotenv import load_dotenv
 load_dotenv()  # take environment variables from .env
 
@@ -42,8 +43,11 @@ print("\nCorpus is loaded... \n First element:\n", list(corpus.values())[0])
 search_engine = SearchEngine(file_path)
 # instantiate our in memory persistence
 analytics_data = AnalyticsData()
-# instantiate RAG generator
-rag_generator = RAGGenerator()
+# instantiate RAG generator: the improved one by default, RAG_MODE=baseline in .env for the original
+if os.getenv("RAG_MODE", "improved") == "baseline":
+    rag_generator = RAGGenerator()
+else:
+    rag_generator = ImprovedRAGGenerator(corpus=corpus)
 
 @app.before_request
 def track_request_and_session():
@@ -111,7 +115,10 @@ def search_form_post():
     search_id = analytics_data.save_query_terms(search_query, session_id=sid)
     session['last_search_id'] = search_id
 
-    results = search_engine.search(search_query, search_id, corpus, algorithm=algorithm)
+    # price and rating phrases ("under 800", "4+ stars") are removed before retrieval: they never appear in
+    # product text, so with AND semantics they would make every search return nothing
+    retrieval_query = parse_constraints(search_query)["clean_query"]
+    results = search_engine.search(retrieval_query, search_id, corpus, algorithm=algorithm)
 
     # generate RAG response based on user query and retrieved results
     rag_response = rag_generator.generate_response(search_query, results)
