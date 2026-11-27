@@ -4,7 +4,7 @@ import os
 from gensim.models import Word2Vec
     
 from myapp.search.objects import Document
-from project_progress.part_1.preprocess import get_json_data
+from project_progress.part_1.preprocess import get_json_data, parse_price, parse_rating
 import project_progress.part_2.inverted_index as tf_idf
 import project_progress.part_3.ranking_bm25 as bm25
 import project_progress.part_3.custom_ranking as custom
@@ -109,10 +109,26 @@ class SearchEngine:
 
         print(f"SearchEngine ready with {len(self.raw_corpus)} products.")
 
-    def search(self, search_query, search_id, corpus, algorithm="custom", num_results=20):
+    def _meets_limits(self, pid, max_price=None, min_price=None, min_rating=None):
+        """True if the product respects the price and rating limits. A missing price or rating fails a limit on it."""
+        raw_doc = self.raw_corpus.get(pid, {})
+        price = parse_price(raw_doc.get("selling_price"))
+        rating = parse_rating(raw_doc.get("average_rating"))
+        if max_price is not None and (price is None or price > max_price):
+            return False
+        if min_price is not None and (price is None or price < min_price):
+            return False
+        if min_rating is not None and (rating is None or rating < min_rating):
+            return False
+        return True
+
+    def search(self, search_query, search_id, corpus, algorithm="custom", num_results=20,
+               max_price=None, min_price=None, min_rating=None):
         """
         It retrives the top_k documents based on the search_query and the ranking algoritm
         If there is no ranking algorithm specified it uses the custom ranking, it can be tunned
+        Optional max_price, min_price and min_rating are applied to all matches before the top
+        num_results are taken, so the results page only shows products that respect them.
         """
         #if there is no search_query we return
         if not search_query or not search_query.strip():
@@ -142,6 +158,10 @@ class SearchEngine:
                 self.tf_custom,
                 self.document_index_custom,
             )
+
+        # price and rating limits filter the whole ranked list, before the top num_results are cut
+        if max_price is not None or min_price is not None or min_rating is not None:
+            ranked_pids = [pid for pid in ranked_pids if self._meets_limits(pid, max_price, min_price, min_rating)]
 
         results = []
         for rank, pid in enumerate(ranked_pids[:num_results], start=1):

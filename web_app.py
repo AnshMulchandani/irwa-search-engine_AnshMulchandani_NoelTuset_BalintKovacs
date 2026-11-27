@@ -117,11 +117,18 @@ def search_form_post():
 
     # price and rating phrases ("under 800", "4+ stars") are removed before retrieval: they never appear in
     # product text, so with AND semantics they would make every search return nothing
-    retrieval_query = parse_constraints(search_query)["clean_query"]
-    results = search_engine.search(retrieval_query, search_id, corpus, algorithm=algorithm)
+    # the limits themselves are applied inside the search, to all matches before the top 20 are cut
+    constraints = parse_constraints(search_query)
+    limits = {k: constraints[k] for k in ("max_price", "min_price", "min_rating")}
+    results = search_engine.search(constraints["clean_query"], search_id, corpus, algorithm=algorithm, **limits)
+
+    # if no product respects the limits, the RAG gets the unfiltered matches so it can say why (e.g. cheapest is 499)
+    rag_input = results
+    if not results and any(v is not None for v in limits.values()):
+        rag_input = search_engine.search(constraints["clean_query"], search_id, corpus, algorithm=algorithm)
 
     # generate RAG response based on user query and retrieved results
-    rag_response = rag_generator.generate_response(search_query, results)
+    rag_response = rag_generator.generate_response(search_query, rag_input)
     print("RAG response:", rag_response)
 
     found_count = len(results)
