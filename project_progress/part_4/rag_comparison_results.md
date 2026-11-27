@@ -1,6 +1,6 @@
 # RAG comparison: baseline vs improved
 
-Model: `llama-3.1-8b-instant`. Mode: dry run (no LLM calls). Retrieval: Part 2 TF-IDF, AND semantics, top 20.
+Model: `qwen/qwen3.8-27b`. Mode: live. Retrieval: Part 2 TF-IDF, AND semantics, top 20.
 
 ## `women tshirt round neck cotton`
 *common query, thousands of matches*
@@ -8,16 +8,29 @@ Model: `llama-3.1-8b-instant`. Mode: dry run (no LLM calls). Retrieval: Part 2 T
 - Baseline retrieval (raw query): **20** products
 - Improved retrieval (query `women tshirt round neck cotton`): **20** products, **8** shown to the LLM after de-duplication and constraints
 
+Latency: baseline 1.2s, improved 0.7s
+
 **Baseline answer**
 
 ```
-(dry run)
+- Best Product: TSHFNFTHMZDWWJZ5 Solid Women Round Neck Orange T-Shirt
+- Why: The user requested a women's t-shirt with a round neck. While the retrieved data does not explicitly list fabric material in the titles (so we cannot strictly verify "cotton"), the "Solid" styles are generally the closest match to a classic, versatile cotton t-shirt. The specific color (Orange) is a standard solid option. However, looking closely at the list, there are multiple solid options. Since the prompt doesn't specify color, any solid t-shirt fits the structural requirements better than printed or checkered ones, which often use different fabric compositions or are less "essential" in nature. Among the solids, the White options (TSHFME2ECMZVSMPS or TSHFDYRDGKHXY52Z) are typically the most universally standard "cotton t-shirt" choice, but since I must pick one, I will select a generic solid option. Wait, usually "cotton" implies a basic essential. Let's look for the most "basic" description. "Solid Women Round Neck White T-Shirt" is the most standard essential item. Let's pick TSHFME2ECMZVSMPS.
+
+*Correction*: Actually, without explicit material info, I should choose the most versatile color. White is the most standard "cotton tee".
+Let's re-evaluate. The prompt asks for "cotton". None of the titles say "Cotton". However, solid t-shirts are more likely to be basic cotton tees than printed ones. I will recommend a Solid White T-shirt as the best fit for a general "cotton tshirt" request due to its versatility.
+
+- Best Product: TSHFME2ECMZVSMPS Solid Women Round Neck White T-Shirt
+- Why: This product matches the user's request for a women's round neck t-shirt. As it is a solid white style, it is the most versatile and classic choice typically associated with standard cotton t-shirts, fitting the "essential" nature of the request better than patterned or colored alternatives when a specific color wasn't requested.
+- Alternative: TSHFNFTHMZDWWJZ5 Solid Women Round Neck Orange T-Shirt
 ```
 
 **Improved answer**
 
 ```
-(dry run: LLM would be called with the prompt below)
+- Best Product: TSHFVXGQZTFPMGMR Printed Women Round Neck White T-Shirt
+- Why: It is the only product listed with "Pure Cotton" fabric, matching the specific material request, and it is in stock with a 3.2/5 rating.
+- Alternative: TSHFVXGQ73ZRG9AW Printed Women Round Neck Blue T-Shirt, which is identical in price, rating, and material but offers a blue color instead of white.
+- Note: None.
 ```
 
 <details><summary>What each LLM sees</summary>
@@ -107,16 +120,21 @@ no price or rating limits
 - Baseline retrieval (raw query): **18** products
 - Improved retrieval (query `ecko unl printed sweatshirt`): **18** products, **8** shown to the LLM after de-duplication and constraints
 
+Latency: baseline 0.2s, improved 0.7s
+
 **Baseline answer**
 
 ```
-(dry run)
+There are no good products that fit the request based on the retrieved results.
 ```
 
 **Improved answer**
 
 ```
-(dry run: LLM would be called with the prompt below)
+- Best Product: SWSFY36HNVD3DUBF Full Sleeve Printed Men Sweatshirt
+- Why: It is the highest-rated option (4.4/5) among the ECKO Unl printed sweatshirts, offering a 68% discount to ₹703 with a Cotton Blend fabric.
+- Alternative: SWSFY382UZHFBCNB Full Sleeve Printed Women Sweatshirt, which has a slightly lower rating (4.0/5) but is cheaper at ₹687.
+- Note: The user did not specify gender; the best product is for men, while the alternative is for women.
 ```
 
 <details><summary>What each LLM sees</summary>
@@ -201,16 +219,23 @@ no price or rating limits
 - Baseline retrieval (raw query): **20** products
 - Improved retrieval (query `satin necktie set pocket square cufflinks`): **20** products, **8** shown to the LLM after de-duplication and constraints
 
+Latency: baseline 0.9s, improved 1.9s
+
 **Baseline answer**
 
 ```
-(dry run)
+- Best Product: CTPFVZHY42MSZCF6 nu-Lite Satin Tie & Cufflink (Black)
+- Why: This product is the best fit because the user specifically requested a "satin necktie set... cufflinks." The "Tie & Cufflink" sets directly satisfy the requirement for a tie and cufflinks combo. Black is a classic, versatile color suitable for most formal or business attire. While none of the retrieved products explicitly list a "pocket square" in the title (suggesting they are likely 2-piece sets of Tie + Cufflinks), this is the closest match to the core request of a tie and cufflink set.
+- Alternative: CTPFVQZX4SZHHHHZ nu-Lite Satin Tie & Cufflink (Beige) if the user prefers a lighter, less formal color option.
 ```
 
 **Improved answer**
 
 ```
-(dry run: LLM would be called with the prompt below)
+- Best Product: CTPFVQZX4SZHHHHZ nu-Lite Satin Tie & Cufflink (Beige)
+- Why: It is the only in-stock option with a higher rating (4.0/5) compared to the others (2.7/5), and it is priced at ₹499 (79% off).
+- Alternative: CTPFVZHY42MSZCF6 nu-Lite Satin Tie & Cufflink (Black), which has the same price but a lower rating of 2.7/5.
+- Note: The request included "pocket square," but none of the retrieved products list a pocket square in their title or description; they are listed only as "Tie & Cufflink."
 ```
 
 <details><summary>What each LLM sees</summary>
@@ -284,16 +309,21 @@ no price or rating limits
 - Baseline retrieval (raw query): **0** products
 - Improved retrieval (query `men slim jeans blue`): **20** products, **4** shown to the LLM after de-duplication and constraints
 
+Latency: baseline 19.1s, improved 1.4s
+
 **Baseline answer**
 
 ```
-(dry run)
+There are no good products that fit the request based on the retrieved results.
 ```
 
 **Improved answer**
 
 ```
-(dry run: LLM would be called with the prompt below)
+- Best Product: [JEAFJM2P2FQQJF3C] Slim Men Dark Blue Jeans
+- Why: This Absolu jean is in stock, priced at ₹589 (61% off), and has a high rating of 4.1/5. It features a slim fit and is made from a Cotton Lycra Blend, matching the request for men's slim blue jeans under ₹800.
+- Alternative: [JEAFDWG9K7KPKHS8] Slim Men Blue Jeans, which is slightly more expensive at ₹599 but offers a washed pattern instead of solid dark blue.
+- Note: None.
 ```
 
 <details><summary>What each LLM sees</summary>
@@ -348,16 +378,21 @@ price between any and ₹800
 - Baseline retrieval (raw query): **0** products
 - Improved retrieval (query `men solid blue track pants`): **20** products, **8** shown to the LLM after de-duplication and constraints
 
+Latency: baseline 0.2s, improved 1.1s
+
 **Baseline answer**
 
 ```
-(dry run)
+There are no good products that fit the request based on the retrieved results.
 ```
 
 **Improved answer**
 
 ```
-(dry run: LLM would be called with the prompt below)
+- Best Product: TKPFWJKKUNUJHH9P Solid Men Blue Track Pants
+- Why: This is the cheapest option at ₹361 (69% off) and has the highest rating (4.3/5) among the top matches. It is made of Pure Cotton and is in stock.
+- Alternative: TKPFYKZZ58DPUZ6N Solid Men Blue Track Pants, which is slightly more expensive at ₹370 but has a lower rating of 3.7/5.
+- Note: None.
 ```
 
 <details><summary>What each LLM sees</summary>
@@ -423,16 +458,20 @@ prefers a low price
 - Baseline retrieval (raw query): **0** products
 - Improved retrieval (query `women sweatshirt`): **20** products, **7** shown to the LLM after de-duplication and constraints
 
+Latency: baseline 6.3s, improved 1.6s
+
 **Baseline answer**
 
 ```
-(dry run)
+There are no good products that fit the request based on the retrieved results.
 ```
 
 **Improved answer**
 
 ```
-(dry run: LLM would be called with the prompt below)
+- Best Product: SWSFNV7N26KC54MB Full Sleeve Solid Women Sweatshirt
+- Why: It has the highest rating (4.3/5) among the options and is the most affordable at ₹407 (45% off), made from a Cotton Blend.
+- Alternative: SWSFMTNHE2PCYWFZ Full Sleeve Solid Women Sweatshirt, which costs more (₹854) and has a slightly lower rating (4.2/5) but is made of Polycotton.
 ```
 
 <details><summary>What each LLM sees</summary>
@@ -499,10 +538,12 @@ rating of at least 4.0/5
 - Baseline retrieval (raw query): **1** products
 - Improved retrieval (query `men formal shirt`): **20** products, **0** shown to the LLM after de-duplication and constraints
 
+Latency: baseline 14.4s, improved 0.0s
+
 **Baseline answer**
 
 ```
-(dry run)
+There are no good products that fit the request based on the retrieved results.
 ```
 
 **Improved answer**
@@ -529,10 +570,12 @@ Improved prompt:
 - Baseline retrieval (raw query): **0** products
 - Improved retrieval (query `waterproof hiking boots`): **0** products, **0** shown to the LLM after de-duplication and constraints
 
+Latency: baseline 0.3s, improved 0.0s
+
 **Baseline answer**
 
 ```
-(dry run)
+There are no good products that fit the request based on the retrieved results.
 ```
 
 **Improved answer**
